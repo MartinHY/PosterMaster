@@ -48,17 +48,27 @@ public class PosterView extends View {
             if (getWidth() != 0) {
                 if (isFirstDraw) {
                     modle.setDrawWidth(getWidth());
+                    isFirstDraw = false;
                 }
                 modle.draw(canvas);
             }
         }
     }
 
+    public void destoryLayers() {
+        if (null != modle) {
+            modle.destroyLayer();
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (null != modle) {
-            modle.onTouchEvent(event);
+            boolean b = modle.onTouchEvent(event);
+            invalidate();
+            return b;
         }
+
         return super.onTouchEvent(event);
     }
 }

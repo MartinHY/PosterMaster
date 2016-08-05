@@ -41,15 +41,33 @@ public class Modle {
         height = (int) (height * scale);
         drawCover = BitmapUtils.scaleBitmap(cover, scale);
         for (int i = 0; i < layers.size(); i++) {
-            layers.get(i).caculateDrawLayer(drawWidth * 1.0f / 720);
+            layers.get(i).caculateDrawLayer(drawWidth * 1.0f / defaultWidth);
         }
     }
 
     public void draw(Canvas canvas) {
         for (int i = 0; i < layers.size(); i++) {
-            layers.get(i).draw(canvas);
+            if (!layers.get(i).isInTouch)
+                layers.get(i).draw(canvas);
         }
         canvas.drawBitmap(drawCover, 0, 0, null);
+        for (int i = 0; i < layers.size(); i++) {
+            if (layers.get(i).isInTouch)
+                layers.get(i).draw(canvas);
+        }
+    }
+
+    /**
+     * 清除layer内存
+     */
+    public void destroyLayer() {
+
+        BitmapUtils.destroyBitmap(cover);
+        BitmapUtils.destroyBitmap(drawCover);
+        for (int i = 0; i < layers.size(); i++) {
+            layers.get(i).destroyLayer();
+        }
+
     }
 
     /**

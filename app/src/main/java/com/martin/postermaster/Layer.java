@@ -8,13 +8,17 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Region;
+import android.nfc.Tag;
+import android.util.Log;
 import android.view.MotionEvent;
 
 /**
- * Created by Martin on 2016/7/23 0023.
+ * @author Martin
+ *         created at 2016/8/6 0006 2:04
  */
 public class Layer {
 
+    private static final String Tag = "Layer";
     private Bitmap layer;
     private Bitmap drawLayer;//提供绘图的原图
     private Paint paint;
@@ -47,7 +51,7 @@ public class Layer {
      */
     public void caculateDrawLayer(float coverScale) {
         layerRectF = scaleRect(coverScale, layerRectF);
-        scale = calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
+        scale = LayerUtils.calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
         drawLayer = BitmapUtils.scaleBitmap(layer, scale);
         // 更新Layer的坐标
         setLayerX(layerRectF.left - ((drawLayer.getWidth() - layerRectF.width()) / 2));
@@ -56,14 +60,28 @@ public class Layer {
 
     public void draw(Canvas canvas) {
         int a = canvas.save(Canvas.ALL_SAVE_FLAG);
-        canvas.rotate(degree, layerRectF.left, layerRectF.top);
-        canvas.clipRect(layerRectF, Region.Op.INTERSECT);
+        canvas.rotate(degree, layerRectF.centerX(), layerRectF.centerY());
+        if (isInTouch) {
+            paint.setAlpha(125);//如果是点击状态 50%的透明度
+        } else {
+            canvas.clipRect(layerRectF, Region.Op.INTERSECT);
+            paint.setAlpha(255);
+        }
         canvas.drawBitmap(drawLayer, x, y, paint);
-
         //这里是通过计算的出来的起始坐标点，图片绘制的大小是和图片大小一致的
         // 所以当进行缩放是图片本身要对应生成对应比例的图片，移动图片则是修改X,Y的值
         canvas.restoreToCount(a);
     }
+
+
+    public boolean isInTouch = false;
+
+    private boolean isMultTouch = false;
+
+    private PointF firstPointF = new PointF();
+    private PointF centerPointF = new PointF();
+    private PointF secondPointF = new PointF();
+    private float lastX, lastY;
 
     /**
      * 触摸事件处理
@@ -72,8 +90,55 @@ public class Layer {
      * @return
      */
     public boolean onTouchEvent(MotionEvent event) {
-        return true;
+        float x = event.getX();
+        float y = event.getY();
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (isTouchInLayer(x, y)) {
+                    lastX = x;
+                    lastY = y;
+                    firstPointF.set(x, y);//默认取得位置是单指的位置
+                    isInTouch = true;
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN://双指操作
+                float x1 = event.getX(1);
+                float y1 = event.getY(1);
+                if (isTouchInLayer(x1, x1)) {
+                    isMultTouch = true;
+                    secondPointF.set(x1, y1);
+                    centerPointF = LayerUtils.middle(event);
+                }
+                Log.i(Tag, "  isMultTouch Layer   " + isMultTouch);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (isInTouch) {
+                    if (isMultTouch) {
+                        //做的旋转，缩放操作
+                        secondPointF.set(event.getX(1), event.getY(1));
+                        float newSpin = LayerUtils.getDegrees(firstPointF, secondPointF, centerPointF);
+                        degree -= newSpin;
+                        Log.i(Tag, "  rotate Layer   " + degree);
+                    } else {//平移操作
+                        moveLayer(event.getX() - lastX, event.getY() - lastY);
+                        lastX = x;
+                        lastY = y;
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+                isInTouch = false;
+                isMultTouch = false;
+                break;
+        }
+        return isInTouch;
     }
+
+    protected boolean isTouchInLayer(float x, float y) {
+        return layerRectF.contains(x, y);
+    }
+
 
     /**
      * 缩放图层
@@ -100,7 +165,7 @@ public class Layer {
      */
     protected void moveLayer(float disX, float disY) {
         x = x + disX;
-        x = disY + y;
+        y = disY + y;
     }
 
     protected void setLayerX(float x) {
@@ -143,29 +208,5 @@ public class Layer {
         return scale;
     }
 
-    /**
-     * 计算缩放比例
-     *
-     * @param bW
-     * @param bH
-     * @param cW
-     * @param cH
-     * @return
-     */
-    public float calculateFitScale(int bW, int bH, int cW, int cH) {
-        float sw = 1;
-        float sh = 1;
-        if (bW > 0) {
-            sw = (float) cW / bW;
-        }
-        if (bH > 0) {
-            sh = (float) cH / bH;
-        }
-        if (sw < sh) {
-            return sh;
-        } else {
-            return sw;
-        }
-    }
 
 }
