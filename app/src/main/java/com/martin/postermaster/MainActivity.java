@@ -38,13 +38,19 @@ public class MainActivity extends AppCompatActivity {
             cover = BitmapFactory.decodeResource(resources, R.drawable.cover);
 
             layer1 = BitmapFactory.decodeResource(resources, R.drawable.layer1);
-            layers.add(new Layer(layer1, new RectF(63, 43, 478.5f, 531.5f), 5));
+            layers.add(new Layer(layer1, 5)
+                    .markPoint(63, 43).markPoint(495, 80)
+                    .markPoint(454, 552).markPoint(21, 515).build());
 
             layer2 = BitmapFactory.decodeResource(resources, R.drawable.layer2);
-            layers.add(new Layer(layer2, new RectF(365, 440, 670, 755), -12));
+            layers.add(new Layer(layer2, -12)
+                    .markPoint(362, 439).markPoint(653, 372)
+                    .markPoint(724, 685).markPoint(434, 751).build());
 
             layer3 = BitmapFactory.decodeResource(resources, R.drawable.layer3);
-            layers.add(new Layer(layer3, new RectF(97, 648, 366, 963.5f), 9));
+            layers.add(new Layer(layer3, 9)
+                    .markPoint(95, 648).markPoint(366, 692)
+                    .markPoint(316, 988).markPoint(45, 943).build());
 
             handler.sendEmptyMessage(0);
         }

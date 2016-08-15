@@ -11,7 +11,7 @@ public class LayerUtils {
 
 
     // 计算两个触摸点之间的距离
-    private float distance(MotionEvent event) {
+    public static float distance(MotionEvent event) {
         float x = event.getX(0) - event.getX(1);
         float y = event.getY(0) - event.getY(1);
         return (float) Math.sqrt(x * x + y * y);
