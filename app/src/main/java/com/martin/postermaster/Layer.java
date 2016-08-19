@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Path;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -46,6 +47,8 @@ public class Layer {
     private static final float MAX_SCALE = 2;//缩放的最大值
     private static final float MIN_SCALE = 0.5f;//缩放的最小值
     private static final float MAX_MOVE_EX = 0.3f;//平移最多预留的距离的比值
+
+    private boolean isSelect = false;
 
     /**
      * 根据上方默认的比例计算出来的值
@@ -150,7 +153,7 @@ public class Layer {
 //        layerPaint.setColor(Color.RED);
 //        canvas.drawPath(layerPath, layerPaint);
         int a = canvas.save(Canvas.ALL_SAVE_FLAG);
-        if (isInTouch) {
+        if (isInTouch || isSelect) {
             layerPaint.setAlpha(125);//如果是点击状态 50%的透明度
         } else {
             canvas.clipPath(layerPath);
@@ -161,7 +164,7 @@ public class Layer {
         canvas.drawBitmap(drawLayer, 0, 0, layerPaint);
         canvas.setDrawFilter(drawFilter);
         canvas.restoreToCount(a);
-        if (isInTouch) {
+        if (isInTouch || isSelect) {
             canvas.drawPath(layerPath, framePaint);
         }
     }
@@ -180,6 +183,8 @@ public class Layer {
     private float lastDegrees;
     private float lastScale;
 
+    private long firstTime;
+
     /**
      * 触摸事件处理
      *
@@ -191,12 +196,17 @@ public class Layer {
         float y = event.getY(0);
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                isSelect = false;
+                if (onLayerSelectListener!=null)
+                    onLayerSelectListener.onSelected(this);
                 if (isTouchInLayer(x, y)) {
                     lastDegrees = 0;
                     lastX = x;
                     lastY = y;
                     firstPointF.set(x, y);//默认取得位置是单指的位置
                     isInTouch = true;
+                    firstTime = event.getEventTime();
+                    Log.i(Tag, "  firstTime getDownTime   " + firstTime);
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN://双指操作
@@ -227,15 +237,29 @@ public class Layer {
                         lastScale = thisScale;
 
                     } else {//平移操作
-                        moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
-                        lastX = x;
-                        lastY = y;
+                        if (event.getEventTime() - firstTime > 250) {
+                            moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
+                            lastX = x;
+                            lastY = y;
+                        }
                     }
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                isInTouch = false;
-                isMultTouch = false;
+                if (isTouchInLayer(x, y)) {
+                    isInTouch = false;
+                    isMultTouch = false;
+                    if (event.getEventTime() - firstTime < 250) {
+                        isSelect = true;
+                        if (onLayerSelectListener!=null)
+                            onLayerSelectListener.onSelected(this);
+                    } else {
+                        isSelect = false;
+                        if (onLayerSelectListener!=null)
+                            onLayerSelectListener.onSelected(this);
+                    }
+                    Log.i(Tag, event.getEventTime() + "  isSelect getDown   " + isSelect);
+                }
                 break;
             case MotionEvent.ACTION_POINTER_UP:
                 isMultTouch = false;
@@ -248,7 +272,6 @@ public class Layer {
     protected boolean isTouchInLayer(float x, float y) {
         return layerRectF.contains(x, y);
     }
-
 
     /**
      * 缩放图层
@@ -264,7 +287,7 @@ public class Layer {
 
         Bitmap scaleLayer = BitmapUtils.scaleBitmap(layer, scale);
         BitmapUtils.destroyBitmap(drawLayer);
-        drawLayer=scaleLayer;
+        drawLayer = scaleLayer;
         // 更新Layer的坐标
         setLayerX(x - (drawLayer.getWidth() - width) / 2);
         setLayerY(y - (drawLayer.getHeight() - height) / 2);
@@ -308,6 +331,18 @@ public class Layer {
     }
 
     /**
+     * 计算出菜单弹出的最优点
+     * @return
+     */
+    public Point getFrontMenuPoint() {
+
+        Point point = new Point();
+
+
+        return point;
+    }
+
+    /**
      * 清除layer内存
      */
     public void destroyLayer() {
@@ -317,6 +352,13 @@ public class Layer {
 
     }
 
+    public boolean isSelect() {
+        return isSelect;
+    }
+
+    public void setSelect(boolean select) {
+        isSelect = select;
+    }
 
     public Bitmap getLayer() {
         return layer;
@@ -338,5 +380,11 @@ public class Layer {
         return scale;
     }
 
+
+    OnLayerSelectListener onLayerSelectListener;
+
+    public void setOnLayerSelectListener(OnLayerSelectListener onLayerSelectListener) {
+        this.onLayerSelectListener = onLayerSelectListener;
+    }
 
 }

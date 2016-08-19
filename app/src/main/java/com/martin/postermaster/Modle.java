@@ -47,12 +47,12 @@ public class Modle {
 
     public void draw(Canvas canvas) {
         for (int i = 0; i < layers.size(); i++) {
-            if (!layers.get(i).isInTouch)
+            if (!layers.get(i).isInTouch&&!layers.get(i).isInTouch)
                 layers.get(i).draw(canvas);
         }
         canvas.drawBitmap(drawCover, 0, 0, null);
         for (int i = 0; i < layers.size(); i++) {
-            if (layers.get(i).isInTouch)
+            if (layers.get(i).isInTouch || layers.get(i).isSelect())
                 layers.get(i).draw(canvas);
         }
     }
@@ -61,13 +61,11 @@ public class Modle {
      * 清除layer内存
      */
     public void destroyLayer() {
-
         BitmapUtils.destroyBitmap(cover);
         BitmapUtils.destroyBitmap(drawCover);
         for (int i = 0; i < layers.size(); i++) {
             layers.get(i).destroyLayer();
         }
-
     }
 
     /**
@@ -78,9 +76,16 @@ public class Modle {
      */
     public boolean onTouchEvent(MotionEvent event) {
         for (int i = 0; i < layers.size(); i++) {
+
             layers.get(i).onTouchEvent(event);
         }
         return true;
+    }
+
+    public void setOnLayerSelectListener(OnLayerSelectListener onLayerSelectListener) {
+        for (int i = 0; i < layers.size(); i++) {
+            layers.get(i).setOnLayerSelectListener(onLayerSelectListener);
+        }
     }
 
 
