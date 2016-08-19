@@ -39,6 +39,22 @@ public class Layer {
     private int degree = 0;//layer在cover中的旋转角度，tip：这里的旋转角度以在cover标注的layer的中心点的旋转角度为基准
     private float scale = 1;//以在视图中的宽度计算出来的缩放比例。
 
+    /**
+     * 这些范围都必须在caculateDrawLayer之后计算，
+     * 是以最优计算的出来的值为准
+     */
+    private static final float MAX_SCALE = 2;//缩放的最大值
+    private static final float MIN_SCALE = 0.5f;//缩放的最小值
+    private static final float MAX_MOVE_EX = 0.3f;//平移最多预留的距离的比值
+
+    /**
+     * 根据上方默认的比例计算出来的值
+     */
+    private float max_scale, min_scale;
+    private float normalX, normalY;
+    private int move_dis_width, move_dis_height;
+
+
     public Layer(Bitmap layer, int degree) {
         this.layer = layer;
         this.degree = degree;
@@ -82,6 +98,7 @@ public class Layer {
 
     public Layer build(Path path) {
         layerPath = path;
+
         width = layer.getWidth();
         height = layer.getHeight();
 
@@ -108,11 +125,22 @@ public class Layer {
         layerRectF = new RectF();
         layerPath.computeBounds(layerRectF, false);
 
+        // 计算最优缩放并更新Layer的坐标
         scale = LayerUtils.calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
         drawLayer = BitmapUtils.scaleBitmap(layer, scale);
-        // 更新Layer的坐标
-        setLayerX(layerRectF.left - ((drawLayer.getWidth() - layerRectF.width()) / 2));
-        setLayerY(layerRectF.top - ((drawLayer.getHeight() - layerRectF.height()) / 2));
+        width = drawLayer.getWidth();
+        height = drawLayer.getHeight();
+        setLayerX(layerRectF.left - ((width - layerRectF.width()) / 2));
+        setLayerY(layerRectF.top - ((height - layerRectF.height()) / 2));
+
+        max_scale = MAX_SCALE * scale;
+        min_scale = MIN_SCALE * scale;
+        //计算预留的值
+        normalX = x;
+        normalY = y;
+        move_dis_width = (int) (drawLayer.getWidth() * (1 - MAX_MOVE_EX));
+        move_dis_height = (int) (drawLayer.getHeight() * (1 - MAX_MOVE_EX));
+
     }
 
     public void draw(Canvas canvas) {
@@ -148,8 +176,9 @@ public class Layer {
     private PointF secondPointF = new PointF();
     private float lastX, lastY;
 
-    private float originalDis = 1f; // 初始的两个手指按下的触摸点的距离
+    private float originalDis; // 初始的两个手指按下的触摸点的距离
     private float lastDegrees;
+    private float lastScale;
 
     /**
      * 触摸事件处理
@@ -173,13 +202,15 @@ public class Layer {
             case MotionEvent.ACTION_POINTER_DOWN://双指操作
                 float x1 = event.getX(1);
                 float y1 = event.getY(1);
-                originalDis = LayerUtils.distance(event);
-
-                isMultTouch = true;
-                secondPointF.set(x1, y1);
-                centerPointF = LayerUtils.middle(event);
-                lastDegrees = LayerUtils.getDegrees(firstPointF, secondPointF, centerPointF);
-//                Log.i(Tag, x1 + "  isMultTouch Layer   " + isMultTouch);
+                if (isInTouch) {
+                    isMultTouch = true;
+                    originalDis = LayerUtils.distance(event);
+                    lastScale = 1;
+                    secondPointF.set(x1, y1);
+                    centerPointF = LayerUtils.middle(event);
+                    lastDegrees = LayerUtils.getDegrees(firstPointF, secondPointF, centerPointF);
+//  Log.i(Tag, x1 + "  isMultTouch Layer   " + isMultTouch);
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInTouch) {
@@ -190,6 +221,11 @@ public class Layer {
                         degree += (int) ((lastDegrees - newSpin) * 0.7f);
                         lastDegrees = newSpin;
 //                        Log.i(Tag, "  rotate Layer   " + degree);
+
+                        float thisScale = LayerUtils.distance(event) / originalDis;
+                        scaleLayer(thisScale / lastScale);
+                        lastScale = thisScale;
+
                     } else {//平移操作
                         moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
                         lastX = x;
@@ -221,10 +257,19 @@ public class Layer {
      */
     protected void scaleLayer(float toSacle) {
         scale = scale * toSacle;
-        drawLayer = BitmapUtils.scaleBitmap(layer, scale);
+        if (scale >= max_scale)
+            scale = max_scale;
+        if (scale <= min_scale)
+            scale = min_scale;
+
+        Bitmap scaleLayer = BitmapUtils.scaleBitmap(layer, scale);
+        BitmapUtils.destroyBitmap(drawLayer);
+        drawLayer=scaleLayer;
         // 更新Layer的坐标
         setLayerX(x - (drawLayer.getWidth() - width) / 2);
         setLayerY(y - (drawLayer.getHeight() - height) / 2);
+        width = drawLayer.getWidth();
+        height = drawLayer.getHeight();
     }
 
     protected RectF scaleRect(float scale, RectF layerRectF) {
@@ -240,6 +285,17 @@ public class Layer {
     protected void moveLayer(float disX, float disY) {
         x = x + disX;
         y = disY + y;
+
+        if (x >= move_dis_width + normalX)
+            x = move_dis_width + normalX;
+        if (x <= normalX - move_dis_width)
+            x = normalX - move_dis_width;
+
+        if (y >= move_dis_height + normalY)
+            y = move_dis_height + normalY;
+        if (y <= normalY - move_dis_height)
+            y = normalY - move_dis_height;
+
     }
 
     protected void setLayerX(float x) {
