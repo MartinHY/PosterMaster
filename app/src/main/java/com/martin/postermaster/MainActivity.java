@@ -3,13 +3,10 @@ package com.martin.postermaster;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.PointF;
-import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 
 
 import java.util.ArrayList;
@@ -58,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-            posterView.setModle(new Modle(cover, layers));
+            posterView.setModel(new Model(cover, layers));
             super.handleMessage(msg);
         }
     };

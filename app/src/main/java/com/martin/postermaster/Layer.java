@@ -25,7 +25,7 @@ public class Layer {
     private static final String Tag = "Layer";
     private Bitmap layer;
     private Path layerPath;
-    private RectF layerRectF;//layerPath外矩形
+    public RectF layerRectF;//layerPath外矩形
 
     private Bitmap drawLayer;//提供绘图的原图
     private Paint layerPaint;
@@ -48,7 +48,10 @@ public class Layer {
     private static final float MIN_SCALE = 0.5f;//缩放的最小值
     private static final float MAX_MOVE_EX = 0.3f;//平移最多预留的距离的比值
 
-    private boolean isSelect = false;
+    public boolean isThouched = false;//点击选中判断
+    private boolean isSelect = false;//点击选中判断
+    private boolean isPreSelect = false;//预览选中的状态
+    private boolean isCanDrawFrame = true;
 
     /**
      * 根据上方默认的比例计算出来的值
@@ -121,15 +124,19 @@ public class Layer {
      * @return
      */
     public void caculateDrawLayer(float coverScale) {
-//        if (layerPath==null)
-        Matrix scaleMatrix = new Matrix();
-        scaleMatrix.postScale(coverScale, coverScale);
-        layerPath.transform(scaleMatrix);
-        layerRectF = new RectF();
-        layerPath.computeBounds(layerRectF, false);
-
+        if (layerRectF == null) {
+            Matrix scaleMatrix = new Matrix();
+            scaleMatrix.postScale(coverScale, coverScale);
+            layerPath.transform(scaleMatrix);
+            layerRectF = new RectF();
+            layerPath.computeBounds(layerRectF, false);
+        }
         // 计算最优缩放并更新Layer的坐标
         scale = LayerUtils.calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
+//        if (scale >= max_scale)
+//            scale = max_scale;
+//        if (scale <= min_scale)
+//            scale = min_scale;
         drawLayer = BitmapUtils.scaleBitmap(layer, scale);
         width = drawLayer.getWidth();
         height = drawLayer.getHeight();
@@ -152,26 +159,28 @@ public class Layer {
 //        canvas.drawRect(layerRectF, paint1);
 //        layerPaint.setColor(Color.RED);
 //        canvas.drawPath(layerPath, layerPaint);
-        int a = canvas.save(Canvas.ALL_SAVE_FLAG);
-        if (isInTouch || isSelect) {
-            layerPaint.setAlpha(125);//如果是点击状态 50%的透明度
-        } else {
-            canvas.clipPath(layerPath);
-            layerPaint.setAlpha(255);
-        }
-        canvas.rotate(degree, layerRectF.centerX(), layerRectF.centerY());
-        canvas.translate(x, y);
-        canvas.drawBitmap(drawLayer, 0, 0, layerPaint);
-        canvas.setDrawFilter(drawFilter);
-        canvas.restoreToCount(a);
-        if (isInTouch || isSelect) {
-            canvas.drawPath(layerPath, framePaint);
+        if (null != drawLayer && !drawLayer.isRecycled()) {
+            int a = canvas.save(Canvas.ALL_SAVE_FLAG);
+            if (isThouched && !isSelect && !isPreSelect) {
+                layerPaint.setAlpha(125);//如果是点击状态 50%的透明度
+            } else {
+                canvas.clipPath(layerPath);
+                layerPaint.setAlpha(255);
+            }
+            canvas.rotate(degree, layerRectF.centerX(), layerRectF.centerY());
+            canvas.translate(x, y);
+            canvas.drawBitmap(drawLayer, 0, 0, layerPaint);
+            canvas.setDrawFilter(drawFilter);
+            canvas.restoreToCount(a);
+            if (isInTouch || isSelect || isPreSelect) {
+                if (isCanDrawFrame)
+                    canvas.drawPath(layerPath, framePaint);
+            }
         }
     }
 
 
-    public boolean isInTouch = false;
-
+    private boolean isInTouch = false;
     private boolean isMultTouch = false;
 
     private PointF firstPointF = new PointF();
@@ -196,8 +205,9 @@ public class Layer {
         float y = event.getY(0);
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                isSelect = false;
-                if (onLayerSelectListener!=null)
+                isThouched = isSelect = isPreSelect = false;
+                focusChange.releaseFocus(this);
+                if (onLayerSelectListener != null)
                     onLayerSelectListener.onSelected(this);
                 if (isTouchInLayer(x, y)) {
                     lastDegrees = 0;
@@ -206,13 +216,15 @@ public class Layer {
                     firstPointF.set(x, y);//默认取得位置是单指的位置
                     isInTouch = true;
                     firstTime = event.getEventTime();
-                    Log.i(Tag, "  firstTime getDownTime   " + firstTime);
+//                    Log.i(Tag, "  firstTime getDownTime   " + firstTime);
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN://双指操作
                 float x1 = event.getX(1);
                 float y1 = event.getY(1);
                 if (isInTouch) {
+                    isThouched = true;
+                    focusChange.requseFocus(this);
                     isMultTouch = true;
                     originalDis = LayerUtils.distance(event);
                     lastScale = 1;
@@ -224,6 +236,8 @@ public class Layer {
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInTouch) {
+                    isThouched = true;
+                    focusChange.requseFocus(this);
                     if (isMultTouch) {
                         //做的旋转，缩放操作
                         secondPointF.set(event.getX(1), event.getY(1));
@@ -237,7 +251,7 @@ public class Layer {
                         lastScale = thisScale;
 
                     } else {//平移操作
-                        if (event.getEventTime() - firstTime > 250) {
+                        if (event.getEventTime() - firstTime > 200) {
                             moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
                             lastX = x;
                             lastY = y;
@@ -246,19 +260,20 @@ public class Layer {
                 }
                 break;
             case MotionEvent.ACTION_UP:
+                isMultTouch = isThouched = isInTouch = false;
+                focusChange.releaseFocus(this);
                 if (isTouchInLayer(x, y)) {
-                    isInTouch = false;
-                    isMultTouch = false;
-                    if (event.getEventTime() - firstTime < 250) {
+                    if (event.getEventTime() - firstTime < 200) {
                         isSelect = true;
-                        if (onLayerSelectListener!=null)
+                        focusChange.requseFocus(this);
+                        if (onLayerSelectListener != null)
                             onLayerSelectListener.onSelected(this);
                     } else {
                         isSelect = false;
-                        if (onLayerSelectListener!=null)
+                        if (onLayerSelectListener != null)
                             onLayerSelectListener.onSelected(this);
                     }
-                    Log.i(Tag, event.getEventTime() + "  isSelect getDown   " + isSelect);
+//                    Log.i(Tag, event.getEventTime() + "  isSelect getDown   " + isSelect);
                 }
                 break;
             case MotionEvent.ACTION_POINTER_UP:
@@ -269,7 +284,7 @@ public class Layer {
         return isInTouch;
     }
 
-    protected boolean isTouchInLayer(float x, float y) {
+    public boolean isTouchInLayer(float x, float y) {
         return layerRectF.contains(x, y);
     }
 
@@ -332,6 +347,7 @@ public class Layer {
 
     /**
      * 计算出菜单弹出的最优点
+     *
      * @return
      */
     public Point getFrontMenuPoint() {
@@ -340,6 +356,13 @@ public class Layer {
 
 
         return point;
+    }
+
+    public void resetLayer(Bitmap layer) {
+        this.layer = layer;
+        width = layer.getWidth();
+        height = layer.getHeight();
+        isPreSelect = isMultTouch = isInTouch = isThouched = isSelect = false;
     }
 
     /**
@@ -352,12 +375,25 @@ public class Layer {
 
     }
 
-    public boolean isSelect() {
-        return isSelect;
+    public boolean isCanDrawFrame() {
+        return isCanDrawFrame;
     }
 
-    public void setSelect(boolean select) {
-        isSelect = select;
+    public void setCanDrawFrame(boolean canDrawFrame) {
+        isCanDrawFrame = canDrawFrame;
+    }
+
+    public boolean isPreSelect() {
+        return isPreSelect;
+    }
+
+    public void setPreSelect(boolean preSelect) {
+        isPreSelect = preSelect;
+        if (isPreSelect) {
+            focusChange.preSelect(this);
+        } else {
+            focusChange.releasePreSelect(this);
+        }
     }
 
     public Bitmap getLayer() {
@@ -385,6 +421,12 @@ public class Layer {
 
     public void setOnLayerSelectListener(OnLayerSelectListener onLayerSelectListener) {
         this.onLayerSelectListener = onLayerSelectListener;
+    }
+
+    private LayerFocusChange focusChange;
+
+    public void setLayerFocusChange(LayerFocusChange focusChange) {
+        this.focusChange = focusChange;
     }
 
 }

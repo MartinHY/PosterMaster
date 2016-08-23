@@ -6,5 +6,4 @@ package com.martin.postermaster;
 public interface OnLayerSelectListener {
 
     void onSelected(Layer layer);
-
 }

@@ -3,7 +3,6 @@ package com.martin.postermaster;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.util.AttributeSet;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -12,7 +11,7 @@ import android.view.View;
  */
 public class PosterView extends View {
 
-    private Modle modle;
+    private Model model;
     private boolean isFirstDraw = true;
     private float viewRatio = 1080 * 1.0f / 720;
 
@@ -24,8 +23,9 @@ public class PosterView extends View {
         super(context, attrs);
     }
 
-    public void setModle(Modle modle) {
-        this.modle = modle;
+    public void setModel(Model model) {
+        this.model = model;
+        this.model.bindView(this);
         invalidate();
     }
 
@@ -45,27 +45,27 @@ public class PosterView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (null != modle) {
+        if (null != model) {
             if (getWidth() != 0) {
                 if (isFirstDraw) {
-                    modle.setDrawWidth(getWidth());
+                    model.setDrawWidth(getWidth());
                     isFirstDraw = false;
                 }
-                modle.draw(canvas);
+                model.draw(canvas);
             }
         }
     }
 
     public void destoryLayers() {
-        if (null != modle) {
-            modle.destroyLayer();
+        if (null != model) {
+            model.destroyLayer();
         }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (null != modle) {
-            boolean b = modle.onTouchEvent(event);
+        if (null != model) {
+            boolean b = model.onTouchEvent(event);
             invalidate();
             return b;
         }
