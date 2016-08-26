@@ -9,8 +9,8 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.martin.postermaster.MainActivity">
 
-   <com.martin.postermaster.PosterView
-       android:id="@+id/posterview"
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content" />
+    <com.martin.poster.PosterView
+        android:id="@+id/posterview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 </RelativeLayout>

@@ -1,4 +1,4 @@
-package com.martin.postermaster;
+package com.martin.poster;
 
 import android.graphics.PointF;
 import android.view.MotionEvent;

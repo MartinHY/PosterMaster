@@ -1,7 +1,8 @@
-package com.martin.postermaster;
+package com.martin.poster;
 
 /**
  * Created by Martin on 2016/8/23 0023.
+ * 内部焦点监听
  */
 public interface LayerFocusChange {
 

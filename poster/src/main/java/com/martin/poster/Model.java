@@ -1,4 +1,4 @@
-package com.martin.postermaster;
+package com.martin.poster;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -26,7 +26,7 @@ public class Model {
 
     private int defaultWidth = 720;//防止从本地mipmap or drawable 中加载的图片被studio处理过，导致图片宽高与坐标点的比例不符
 
-    private PosterView posterView;
+    private ModelView modelView;
 
     private Layer focusLayer, preSelectLayer;
     private Paint framePaint;
@@ -121,7 +121,7 @@ public class Model {
             }
         }
 
-        return false;
+        return true;
     }
 
     private void swithLayer(Layer layer, Layer layer1) {
@@ -131,8 +131,8 @@ public class Model {
         layer.caculateDrawLayer(drawWidth * 1.0f / defaultWidth);
         layer1.caculateDrawLayer(drawWidth * 1.0f / defaultWidth);
         focusLayer = null;
-        if (posterView != null) {
-            posterView.invalidate();
+        if (modelView != null) {
+            modelView.invalidate();
         }
     }
 
@@ -166,8 +166,13 @@ public class Model {
         }
     };
 
-    public void bindView(PosterView posterView) {
-        this.posterView = posterView;
+    public void bindView(ModelView modelView) {
+        this.modelView = modelView;
+    }
+
+    public void releaseAllFocus(){
+        for (Layer layer : layers)
+            layer.releaseAllFocus();
     }
 
 }

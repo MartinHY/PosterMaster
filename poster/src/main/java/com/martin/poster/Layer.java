@@ -1,4 +1,4 @@
-package com.martin.postermaster;
+package com.martin.poster;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -9,11 +9,7 @@ import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.PointF;
-import android.graphics.Rect;
 import android.graphics.RectF;
-import android.graphics.Region;
-import android.nfc.Tag;
-import android.util.Log;
 import android.view.MotionEvent;
 
 /**
@@ -23,11 +19,13 @@ import android.view.MotionEvent;
 public class Layer {
 
     private static final String Tag = "Layer";
-    private Bitmap layer;
-    private Path layerPath;
+    private Bitmap layer;//提供绘图的原图
+    private Bitmap drawLayer;//绘制的图
+    private Bitmap filterLayer;
+
+    private Path layerPath;//layer实际的形状
     public RectF layerRectF;//layerPath外矩形
 
-    private Bitmap drawLayer;//提供绘图的原图
     private Paint layerPaint;
     private Paint framePaint;
     private static final int frameColor = Color.parseColor("#FF3E96");
@@ -37,7 +35,7 @@ public class Layer {
     private float x, y;
     private int width, height;
 
-    private int degree = 0;//layer在cover中的旋转角度，tip：这里的旋转角度以在cover标注的layer的中心点的旋转角度为基准
+    private int degree = 0;//=ayer在cover中的旋转角度，tip：这里的旋转角度以在cover标注的layer的中心点的旋转角度为基准
     private float scale = 1;//以在视图中的宽度计算出来的缩放比例。
 
     /**
@@ -194,6 +192,8 @@ public class Layer {
 
     private long firstTime;
 
+    private static final int MaxMenuPadding = 20;
+
     /**
      * 触摸事件处理
      *
@@ -208,7 +208,7 @@ public class Layer {
                 isThouched = isSelect = isPreSelect = false;
                 focusChange.releaseFocus(this);
                 if (onLayerSelectListener != null)
-                    onLayerSelectListener.onSelected(this);
+                    onLayerSelectListener.dismiss(this);
                 if (isTouchInLayer(x, y)) {
                     lastDegrees = 0;
                     lastX = x;
@@ -245,7 +245,6 @@ public class Layer {
                         degree += (int) ((lastDegrees - newSpin) * 0.7f);
                         lastDegrees = newSpin;
 //                        Log.i(Tag, "  rotate Layer   " + degree);
-
                         float thisScale = LayerUtils.distance(event) / originalDis;
                         scaleLayer(thisScale / lastScale);
                         lastScale = thisScale;
@@ -271,7 +270,7 @@ public class Layer {
                     } else {
                         isSelect = false;
                         if (onLayerSelectListener != null)
-                            onLayerSelectListener.onSelected(this);
+                            onLayerSelectListener.dismiss(this);
                     }
 //                    Log.i(Tag, event.getEventTime() + "  isSelect getDown   " + isSelect);
                 }
@@ -299,8 +298,12 @@ public class Layer {
             scale = max_scale;
         if (scale <= min_scale)
             scale = min_scale;
-
-        Bitmap scaleLayer = BitmapUtils.scaleBitmap(layer, scale);
+        Bitmap scaleLayer;
+        if (filterLayer != null) {
+            scaleLayer = BitmapUtils.scaleBitmap(filterLayer, scale);
+        } else {
+            scaleLayer = BitmapUtils.scaleBitmap(layer, scale);
+        }
         BitmapUtils.destroyBitmap(drawLayer);
         drawLayer = scaleLayer;
         // 更新Layer的坐标
@@ -350,12 +353,31 @@ public class Layer {
      *
      * @return
      */
-    public Point getFrontMenuPoint() {
+    public MenuPoint getFrontMenuPoint(int height, int menuHeight) {
+        PointF point = new PointF();
+        MenuPoint menuPoint = null;
+        if (height - MaxMenuPadding < layerRectF.bottom + menuHeight) {
+            point.set(layerRectF.left, layerRectF.top);
+            menuPoint = new MenuPoint(1, point);
+        } else {
+            point.set(layerRectF.left, layerRectF.bottom);
+            menuPoint = new MenuPoint(0, point);
+        }
+        return menuPoint;
+    }
 
-        Point point = new Point();
+    /**
+     * 定义菜单坐标对象，
+     * direction对应方向，0代表上，1代表下
+     */
+    public static class MenuPoint {
+        int direction;
+        PointF point;
 
-
-        return point;
+        public MenuPoint(int direction, PointF point) {
+            this.direction = direction;
+            this.point = point;
+        }
     }
 
     public void resetLayer(Bitmap layer) {
@@ -366,13 +388,33 @@ public class Layer {
     }
 
     /**
+     * 设置滤镜图片
+     *
+     * @param filterLayer
+     */
+    public void setFilterLayer(Bitmap filterLayer) {
+        this.filterLayer = filterLayer;
+        //因为当前绘制的图片使用的是原图（或者滤镜图）缩放过后的图，所以当有滤镜图存在的同时需要将滤镜图进行缩放
+        scaleLayer(1);
+    }
+
+    /**
+     * 去除滤镜图
+     */
+    public void clearFilter() {
+        BitmapUtils.destroyBitmap(filterLayer);//方法里有致空操作
+        filterLayer = null;
+        scaleLayer(1);
+    }
+
+
+    /**
      * 清除layer内存
      */
     public void destroyLayer() {
-
         BitmapUtils.destroyBitmap(layer);
         BitmapUtils.destroyBitmap(drawLayer);
-
+        BitmapUtils.destroyBitmap(filterLayer);
     }
 
     public boolean isCanDrawFrame() {
@@ -427,6 +469,12 @@ public class Layer {
 
     public void setLayerFocusChange(LayerFocusChange focusChange) {
         this.focusChange = focusChange;
+    }
+
+    public void releaseAllFocus() {
+        isPreSelect = isMultTouch = isInTouch = isThouched = isSelect = false;
+        onLayerSelectListener.dismiss(this);
+        focusChange.releaseFocus(this);
     }
 
 }
