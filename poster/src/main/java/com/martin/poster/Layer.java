@@ -237,7 +237,7 @@ public class Layer {
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInTouch) {
-                    if (event.getX(0) - lastX > 10 || event.getY(0) - lastY > 10) {
+                    if (x - firstPointF.x > 5 ||x - firstPointF.y > 5) {
                         isThouched = true;
                         focusChange.requseFocus(this);
                     }
@@ -253,11 +253,9 @@ public class Layer {
                         lastScale = thisScale;
 
                     } else {//平移操作
-                        if (event.getEventTime() - firstTime > 200) {
-                            moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
-                            lastX = x;
-                            lastY = y;
-                        }
+                        moveLayer(event.getX(0) - lastX, event.getY(0) - lastY);
+                        lastX = x;
+                        lastY = y;
                     }
                 }
                 break;
