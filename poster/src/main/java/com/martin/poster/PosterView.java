@@ -50,11 +50,9 @@ public class PosterView extends RelativeLayout {
         menu.setVisibility(GONE);
     }
 
-    @Override
-    protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        super.onLayout(changed, l, t, r, b);
-        width = getWidth();
-        height = getHeight();
+    public void dissMenu() {
+        if (null != menu)
+            menu.setVisibility(GONE);
     }
 
     public void showMenu(Layer layer) {
@@ -73,16 +71,19 @@ public class PosterView extends RelativeLayout {
 
     }
 
-    public void dissMenu() {
-        if (null != menu)
-            menu.setVisibility(GONE);
-    }
-
     public void setModel(Model model) {
         if (null != modelView) {
             modelView.setModel(model);
         }
     }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        width = getWidth();
+        height = getHeight();
+    }
+
 
     public ModelView getModelView() {
         return modelView;

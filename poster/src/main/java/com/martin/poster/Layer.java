@@ -131,11 +131,12 @@ public class Layer {
         }
         // 计算最优缩放并更新Layer的坐标
         scale = LayerUtils.calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
-//        if (scale >= max_scale)
-//            scale = max_scale;
-//        if (scale <= min_scale)
-//            scale = min_scale;
-        drawLayer = BitmapUtils.scaleBitmap(layer, scale);
+        if (filterLayer != null) {
+            drawLayer = BitmapUtils.scaleBitmap(filterLayer, scale);
+        } else {
+            drawLayer = BitmapUtils.scaleBitmap(layer, scale);
+        }
+
         width = drawLayer.getWidth();
         height = drawLayer.getHeight();
         setLayerX(layerRectF.left - ((width - layerRectF.width()) / 2));
@@ -236,8 +237,10 @@ public class Layer {
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInTouch) {
-                    isThouched = true;
-                    focusChange.requseFocus(this);
+                    if (event.getX(0) - lastX > 10 || event.getY(0) - lastY > 10) {
+                        isThouched = true;
+                        focusChange.requseFocus(this);
+                    }
                     if (isMultTouch) {
                         //做的旋转，缩放操作
                         secondPointF.set(event.getX(1), event.getY(1));
@@ -380,8 +383,9 @@ public class Layer {
         }
     }
 
-    public void resetLayer(Bitmap layer) {
+    public void resetLayer(Bitmap layer, Bitmap filterLayer) {
         this.layer = layer;
+        this.filterLayer = filterLayer;
         width = layer.getWidth();
         height = layer.getHeight();
         isPreSelect = isMultTouch = isInTouch = isThouched = isSelect = false;
@@ -440,6 +444,10 @@ public class Layer {
 
     public Bitmap getLayer() {
         return layer;
+    }
+
+    public Bitmap getFilterLayer() {
+        return filterLayer;
     }
 
     public void setLayer(Bitmap layer) {

@@ -36,7 +36,6 @@ public class Model {
         this.cover = cover;
         width = cover.getWidth();
         height = cover.getHeight();
-        Log.i(Tag, "cover的宽 ：" + width + "   cover的高 ：" + height);//这里获取的图片的宽高既然比真实图片还要大··
         this.layers = layers;
         for (Layer layer : layers)
             layer.setLayerFocusChange(focusChange);
@@ -126,8 +125,9 @@ public class Model {
 
     private void swithLayer(Layer layer, Layer layer1) {
         Bitmap preBitmap = layer.getLayer();
-        layer.resetLayer(layer1.getLayer());
-        layer1.resetLayer(preBitmap);
+        Bitmap preFilterBitmap = layer.getFilterLayer();
+        layer.resetLayer(layer1.getLayer(), layer1.getFilterLayer());
+        layer1.resetLayer(preBitmap, preFilterBitmap);
         layer.caculateDrawLayer(drawWidth * 1.0f / defaultWidth);
         layer1.caculateDrawLayer(drawWidth * 1.0f / defaultWidth);
         focusLayer = null;
@@ -170,7 +170,7 @@ public class Model {
         this.modelView = modelView;
     }
 
-    public void releaseAllFocus(){
+    public void releaseAllFocus() {
         for (Layer layer : layers)
             layer.releaseAllFocus();
     }
