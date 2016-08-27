@@ -6,7 +6,7 @@
 
 ![pre.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/pre.gif)
 
-![filter.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/filter.gif)
+![filter.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/filter.gif)
 
 ![switch.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/switch.gif)
 
