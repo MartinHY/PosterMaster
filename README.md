@@ -4,11 +4,11 @@
 ##模仿 《海报工厂》
 
 
-![pre.gif](http://upload-images.jianshu.io/upload_images/2510337-fcadb579202bcdfd.gif?imageMogr2/auto-orient/strip)
+![pre.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/pre.gif)
 
-![filter.gif](http://upload-images.jianshu.io/upload_images/2510337-1162fb0f8f665ebc.gif?imageMogr2/auto-orient/strip)
+![filter.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/filter.gif)
 
-![switch.gif](http://upload-images.jianshu.io/upload_images/2510337-95b785037f995bec.gif?imageMogr2/auto-orient/strip)
+![switch.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/switch.gif)
 
 [博客地址](http://www.jianshu.com/p/7ec2d62ae9f8 "博客地址")
 
