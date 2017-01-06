@@ -8,7 +8,9 @@
 
 ![filter.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/filter.gif)
 
-![switch.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/switch.gif)
+![switch.gif](https://github.com/MartinBZDQSM/PosterMaster/blob/master/app/src/main/res/raw/switch1.gif)
+
+####最新更新： 解决旋转180度平移反向的问题。
 
 [博客地址](http://www.jianshu.com/p/7ec2d62ae9f8 "博客地址")
 
