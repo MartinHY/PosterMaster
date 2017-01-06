@@ -32,7 +32,7 @@ public class Layer {
 
     private PaintFlagsDrawFilter drawFilter;
 
-    private float x, y;
+    private float x, y, moveLayerCenterX, moveLayerCenterY;//新加移动中心点坐标，不再使用外边框中心点作为移动的中心点了
     private int width, height;
 
     private int degree = 0;//=ayer在cover中的旋转角度，tip：这里的旋转角度以在cover标注的layer的中心点的旋转角度为基准
@@ -128,6 +128,8 @@ public class Layer {
             layerPath.transform(scaleMatrix);
             layerRectF = new RectF();
             layerPath.computeBounds(layerRectF, false);
+            moveLayerCenterX = layerRectF.centerX();
+            moveLayerCenterX = layerRectF.centerY();
         }
         // 计算最优缩放并更新Layer的坐标
         scale = LayerUtils.calculateFitScale(width, height, (int) layerRectF.width(), (int) layerRectF.height());
@@ -166,8 +168,9 @@ public class Layer {
                 canvas.clipPath(layerPath);
                 layerPaint.setAlpha(255);
             }
-            canvas.rotate(degree, layerRectF.centerX(), layerRectF.centerY());
             canvas.translate(x, y);
+            canvas.rotate(degree, layerRectF.centerX(), layerRectF.centerY());
+
             canvas.drawBitmap(drawLayer, 0, 0, layerPaint);
             canvas.setDrawFilter(drawFilter);
             canvas.restoreToCount(a);
@@ -237,7 +240,7 @@ public class Layer {
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (isInTouch) {
-                    if (x - firstPointF.x > 5 ||x - firstPointF.y > 5) {
+                    if (x - firstPointF.x > 5 || x - firstPointF.y > 5) {
                         isThouched = true;
                         focusChange.requseFocus(this);
                     }
@@ -325,8 +328,11 @@ public class Layer {
      * @param disY
      */
     protected void moveLayer(float disX, float disY) {
-        x = x + disX;
-        y = disY + y;
+        x += disX;
+        y += disY;
+
+        moveLayerCenterX += disX;
+        moveLayerCenterY += disY;
 
         if (x >= move_dis_width + normalX)
             x = move_dis_width + normalX;
